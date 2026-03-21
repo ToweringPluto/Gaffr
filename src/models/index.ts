@@ -9,3 +9,7 @@ export type { BenchOrderWarning, HighPriorityAlert, TeamOverlap, RotationRisk } 
 export type { PriceDirection, PricePrediction, SellAlert, BuyUrgency } from './priceChange';
 export type { MiniLeagueStanding, TemplatePlayer } from './miniLeague';
 export type { BootstrapStatic, Team, Gameweek } from './bootstrapStatic';
+export type { GameweekLive, LivePlayerStats } from './gameweekLive';
+export type { ManagerPicks, ManagerPick } from './managerPicks';
+export type { ManagerHistory, ManagerHistoryGameweek } from './managerHistory';
+export type { LeagueStandings, LeagueStandingEntry } from './leagueStandings';
