@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { BottomTabNavigator } from './src/navigation/BottomTabNavigator';
@@ -7,12 +8,12 @@ import { colors } from './src/theme';
 
 export default function App() {
   return (
-    <View style={styles.container}>
+    <GestureHandlerRootView style={styles.container}>
       <NavigationContainer>
         <BottomTabNavigator />
       </NavigationContainer>
       <StatusBar style="light" />
-    </View>
+    </GestureHandlerRootView>
   );
 }
 
