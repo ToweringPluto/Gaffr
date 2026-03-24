@@ -32,7 +32,17 @@ import { detectOverlaps } from '../domain/teamOverlapDetector';
 import { sortNewsByPriority, getSquadPlayerIds } from '../domain/newsProcessor';
 import { useNews } from '../hooks/useNews';
 import { createLocalCache } from '../data/localCache';
-import { scheduleDeadlineReminder } from '../notifications/deadlineNotifier';
+
+// Lazy import to avoid expo-notifications crash in Expo Go
+const scheduleDeadlineReminderSafe = async (deadline: string) => {
+  try {
+    const { scheduleDeadlineReminder } = await import('../notifications/deadlineNotifier');
+    await scheduleDeadlineReminder(deadline);
+  } catch {
+    // expo-notifications not available (e.g. Expo Go) — skip silently
+  }
+};
+
 import { useResponsive } from '../hooks/useResponsive';
 import type { SquadPlayer, BenchOrderWarning, HighPriorityAlert, TeamOverlap, NewsItem, NewsSeverity } from '../models';
 
@@ -137,7 +147,7 @@ export const DashboardScreen: React.FC = () => {
     if (bootstrap.data?.gameweeks) {
       const state = getDeadlineState(bootstrap.data.gameweeks, new Date(), TIMEZONE);
       if (state && !state.isLocked && state.deadlineUtc) {
-        scheduleDeadlineReminder(state.deadlineUtc);
+        scheduleDeadlineReminderSafe(state.deadlineUtc);
       }
     }
   }, [bootstrap.data]);

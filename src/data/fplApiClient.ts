@@ -6,7 +6,7 @@ import type { LeagueStandings } from '../models/leagueStandings';
 import type { GameweekLive } from '../models/gameweekLive';
 import type { ManagerPicks } from '../models/managerPicks';
 
-const BASE_URL = process.env.BASE_URL;
+const BASE_URL = 'https://fantasy.premierleague.com/api';
 const TIMEOUT_MS = 10_000;
 
 export interface FplApiClient {
