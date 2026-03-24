@@ -48,6 +48,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.bgSurface,
+    minHeight: 44,
   },
   statusDot: {
     width: 8,
