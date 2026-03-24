@@ -33,6 +33,7 @@ import { sortNewsByPriority, getSquadPlayerIds } from '../domain/newsProcessor';
 import { useNews } from '../hooks/useNews';
 import { createLocalCache } from '../data/localCache';
 import { scheduleDeadlineReminder } from '../notifications/deadlineNotifier';
+import { useResponsive } from '../hooks/useResponsive';
 import type { SquadPlayer, BenchOrderWarning, HighPriorityAlert, TeamOverlap, NewsItem, NewsSeverity } from '../models';
 
 const cache = createLocalCache();
@@ -105,6 +106,7 @@ export const DashboardScreen: React.FC = () => {
   const news = useNews();
   const [deadlineState, setDeadlineState] = useState<DeadlineState | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { isTablet } = useResponsive();
 
   // Load stored team ID
   useEffect(() => {
@@ -277,102 +279,109 @@ export const DashboardScreen: React.FC = () => {
                 </View>
               )}
 
-              {/* High Priority Alerts */}
-              {highAlerts.length > 0 && (
-                <View style={styles.section}>
-                  <SectionHeading title="ALERTS" />
-                  {highAlerts.map((alert, i) => (
-                    <View key={`alert-${i}`} style={styles.alertRow}>
-                      <View style={styles.alertDot} />
-                      <Text style={styles.alertText}>
-                        {alert.starter.name.toUpperCase()} ({alert.starter.chanceOfPlaying}%) {'>> '}
-                        {alert.benchReplacement.name.toUpperCase()} (NO FIXTURE)
-                      </Text>
+              {/* Responsive grid for tablet */}
+              <View style={isTablet ? styles.tabletGrid : undefined}>
+                <View style={isTablet ? styles.tabletColumn : undefined}>
+                  {/* High Priority Alerts */}
+                  {highAlerts.length > 0 && (
+                    <View style={styles.section}>
+                      <SectionHeading title="ALERTS" />
+                      {highAlerts.map((alert, i) => (
+                        <View key={`alert-${i}`} style={styles.alertRow}>
+                          <View style={styles.alertDot} />
+                          <Text style={styles.alertText}>
+                            {alert.starter.name.toUpperCase()} ({alert.starter.chanceOfPlaying}%) {'>> '}
+                            {alert.benchReplacement.name.toUpperCase()} (NO FIXTURE)
+                          </Text>
+                        </View>
+                      ))}
                     </View>
-                  ))}
-                </View>
-              )}
+                  )}
 
-              {/* Team Overlap Warnings */}
-              {overlaps.length > 0 && (
-                <View style={styles.section}>
-                  <SectionHeading title="TEAM OVERLAP" />
-                  {overlaps.map((overlap, i) => (
-                    <View key={`overlap-${i}`} style={styles.overlapCard}>
-                      <View style={styles.overlapHeader}>
-                        <InlineTag
-                          label={overlap.severity === 'high' ? 'HIGH RISK' : 'OVERLAP'}
-                          variant={overlap.severity === 'high' ? 'negative' : 'warning'}
-                        />
-                        <Text style={styles.overlapMeta}>
-                          {overlap.players.length} PLAYERS -- MAX LOSS {overlap.maxPotentialLoss.toFixed(1)}
-                        </Text>
-                      </View>
-                      {overlap.players.map((p) => (
+                  {/* Squad — Starters */}
+                  {starters.length > 0 && (
+                    <View style={styles.section}>
+                      <SectionHeading title="STARTING XI" />
+                      {starters.map((p) => (
                         <PlayerRow
                           key={p.id}
                           name={p.name}
                           status={getPlayerStatus(p, currentGw!, fixtures)}
-                          rightValue={`${p.form.toFixed(1)} PTS`}
+                          rightValue={`${p.form.toFixed(1)}`}
+                          rightBadge={
+                            p.isCaptain ? (
+                              <InlineTag label="C" variant="captain" />
+                            ) : p.isViceCaptain ? (
+                              <InlineTag label="VC" variant="info" />
+                            ) : undefined
+                          }
                         />
                       ))}
                     </View>
-                  ))}
+                  )}
                 </View>
-              )}
 
-              {/* Squad — Starters */}
-              {starters.length > 0 && (
-                <View style={styles.section}>
-                  <SectionHeading title="STARTING XI" />
-                  {starters.map((p) => (
-                    <PlayerRow
-                      key={p.id}
-                      name={p.name}
-                      status={getPlayerStatus(p, currentGw!, fixtures)}
-                      rightValue={`${p.form.toFixed(1)}`}
-                      rightBadge={
-                        p.isCaptain ? (
-                          <InlineTag label="C" variant="captain" />
-                        ) : p.isViceCaptain ? (
-                          <InlineTag label="VC" variant="info" />
-                        ) : undefined
-                      }
-                    />
-                  ))}
-                </View>
-              )}
-
-              {/* Squad — Bench */}
-              {bench.length > 0 && (
-                <View style={styles.section}>
-                  <SectionHeading title="BENCH" />
-                  {bench.map((p) => (
-                    <PlayerRow
-                      key={p.id}
-                      name={p.name}
-                      status={getPlayerStatus(p, currentGw!, fixtures)}
-                      rightValue={`${p.benchOrder}`}
-                    />
-                  ))}
-                </View>
-              )}
-
-              {/* Bench Order Warnings */}
-              {benchWarnings.length > 0 && (
-                <View style={styles.section}>
-                  <SectionHeading title="BENCH ORDER" />
-                  {benchWarnings.map((w, i) => (
-                    <View key={`bw-${i}`} style={styles.alertRow}>
-                      <View style={styles.warningDot} />
-                      <Text style={styles.warningText}>
-                        {w.blankPlayer.name.toUpperCase()} (NO FIXTURE) BLOCKS{' '}
-                        {w.playingPlayerBehind.name.toUpperCase()}
-                      </Text>
+                <View style={isTablet ? styles.tabletColumn : undefined}>
+                  {/* Team Overlap Warnings */}
+                  {overlaps.length > 0 && (
+                    <View style={styles.section}>
+                      <SectionHeading title="TEAM OVERLAP" />
+                      {overlaps.map((overlap, i) => (
+                        <View key={`overlap-${i}`} style={styles.overlapCard}>
+                          <View style={styles.overlapHeader}>
+                            <InlineTag
+                              label={overlap.severity === 'high' ? 'HIGH RISK' : 'OVERLAP'}
+                              variant={overlap.severity === 'high' ? 'negative' : 'warning'}
+                            />
+                            <Text style={styles.overlapMeta}>
+                              {overlap.players.length} PLAYERS -- MAX LOSS {overlap.maxPotentialLoss.toFixed(1)}
+                            </Text>
+                          </View>
+                          {overlap.players.map((p) => (
+                            <PlayerRow
+                              key={p.id}
+                              name={p.name}
+                              status={getPlayerStatus(p, currentGw!, fixtures)}
+                              rightValue={`${p.form.toFixed(1)} PTS`}
+                            />
+                          ))}
+                        </View>
+                      ))}
                     </View>
-                  ))}
+                  )}
+
+                  {/* Squad — Bench */}
+                  {bench.length > 0 && (
+                    <View style={styles.section}>
+                      <SectionHeading title="BENCH" />
+                      {bench.map((p) => (
+                        <PlayerRow
+                          key={p.id}
+                          name={p.name}
+                          status={getPlayerStatus(p, currentGw!, fixtures)}
+                          rightValue={`${p.benchOrder}`}
+                        />
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Bench Order Warnings */}
+                  {benchWarnings.length > 0 && (
+                    <View style={styles.section}>
+                      <SectionHeading title="BENCH ORDER" />
+                      {benchWarnings.map((w, i) => (
+                        <View key={`bw-${i}`} style={styles.alertRow}>
+                          <View style={styles.warningDot} />
+                          <Text style={styles.warningText}>
+                            {w.blankPlayer.name.toUpperCase()} (NO FIXTURE) BLOCKS{' '}
+                            {w.playingPlayerBehind.name.toUpperCase()}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
-              )}
+              </View>
 
               {/* News Feed */}
               {(sortedNews.length > 0 || news.error) && (
@@ -612,5 +621,12 @@ const styles = StyleSheet.create({
     fontWeight: fontWeights.normal,
     color: colors.red,
     textTransform: 'uppercase',
+  },
+  tabletGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  tabletColumn: {
+    flex: 1,
   },
 });

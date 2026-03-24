@@ -49,6 +49,7 @@ import {
   getBuyUrgency,
 } from '../domain/priceChangePredictor';
 import { createLocalCache } from '../data/localCache';
+import { useResponsive } from '../hooks/useResponsive';
 import type {
   Position,
   RankedPlayer,
@@ -78,6 +79,7 @@ export const SquadScreen: React.FC = () => {
   const [priceMin, setPriceMin] = useState<number>(PRICE_MIN);
   const [priceMax, setPriceMax] = useState<number>(PRICE_MAX);
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
+  const { isTablet } = useResponsive();
 
   // Load stored team ID
   React.useEffect(() => {
@@ -405,130 +407,136 @@ export const SquadScreen: React.FC = () => {
                 <>
                   {/* === TRANSFERS VIEW === */}
 
-                  {/* Hit Calculator */}
-                  {showHitCalculator && hitResult && (
-                    <View style={styles.section}>
-                      <SectionHeading title="HIT CALCULATOR" />
-                      <StatTrio
-                        items={[
-                          {
-                            value: `-${hitResult.hitCost}`,
-                            label: 'HIT COST',
-                            color: colors.red,
-                          },
-                          {
-                            value: `+${hitResult.projectedGain.toFixed(1)}`,
-                            label: 'PROJ GAIN',
-                            color: colors.green,
-                          },
-                          {
-                            value: `${hitResult.net > 0 ? '+' : ''}${hitResult.net.toFixed(1)}`,
-                            label: 'NET',
-                            color: hitResult.justified ? colors.green : colors.red,
-                          },
-                        ]}
-                      />
-                      <View style={styles.hitVerdict}>
-                        <InlineTag
-                          label={hitResult.justified ? 'HIT JUSTIFIED' : 'HIT NOT RECOMMENDED'}
-                          variant={hitResult.justified ? 'positive' : 'negative'}
-                        />
-                      </View>
-                    </View>
-                  )}
-
-                  {/* Transfer Suggestions Out */}
-                  {transfersOut.length > 0 && (
-                    <View style={styles.section}>
-                      <SectionHeading title="SUGGESTED TRANSFERS" />
-                      {transfersOut.slice(0, 5).map((t, i) => {
-                        if (!t.playerOut) return null;
-                        // Find best replacement
-                        const replacement = transfersIn.find(
-                          (r) => r.playerIn.position === t.playerOut!.position,
-                        );
-                        if (!replacement) return null;
-                        const gain = projectPointsGain(
-                          t.playerOut,
-                          replacement.playerIn,
-                          4,
-                        );
-                        return (
-                          <TransferRow
-                            key={`transfer-${i}`}
-                            playerOut={t.playerOut.name}
-                            playerIn={replacement.playerIn.name}
-                            projectedGain={`${gain > 0 ? '+' : ''}${gain.toFixed(1)}`}
+                  {/* Responsive grid for tablet: transfers + targets side by side */}
+                  <View style={isTablet ? styles.tabletGrid : undefined}>
+                    <View style={isTablet ? styles.tabletColumn : undefined}>
+                      {/* Hit Calculator */}
+                      {showHitCalculator && hitResult && (
+                        <View style={styles.section}>
+                          <SectionHeading title="HIT CALCULATOR" />
+                          <StatTrio
+                            items={[
+                              {
+                                value: `-${hitResult.hitCost}`,
+                                label: 'HIT COST',
+                                color: colors.red,
+                              },
+                              {
+                                value: `+${hitResult.projectedGain.toFixed(1)}`,
+                                label: 'PROJ GAIN',
+                                color: colors.green,
+                              },
+                              {
+                                value: `${hitResult.net > 0 ? '+' : ''}${hitResult.net.toFixed(1)}`,
+                                label: 'NET',
+                                color: hitResult.justified ? colors.green : colors.red,
+                              },
+                            ]}
                           />
-                        );
-                      })}
-                    </View>
-                  )}
-
-                  {/* Price Change Alerts */}
-                  {sellAlerts.length > 0 && (
-                    <View style={styles.section}>
-                      <SectionHeading title="PRICE ALERTS" />
-                      {sellAlerts.map((alert) => (
-                        <View key={alert.player.id} style={styles.priceAlertRow}>
-                          <View style={styles.alertDot} />
-                          <Text style={styles.priceAlertName}>
-                            {alert.player.name.toUpperCase()}
-                          </Text>
-                          <InlineTag label="FALLING" variant="negative" />
-                          <Text style={styles.priceAlertValue}>
-                            {formatCost(alert.currentSellingPrice)}M {'>> '}
-                            {formatCost(alert.predictedSellingPrice)}M
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-
-                  {/* Buy Urgency on Transfer In suggestions */}
-                  {transfersIn.length > 0 && (
-                    <View style={styles.section}>
-                      <SectionHeading title="TOP TARGETS" />
-                      {transfersIn.slice(0, 6).map((t) => {
-                        const pred = pricePredictions.find(
-                          (p) => p.playerId === t.playerIn.id,
-                        );
-                        const urgency =
-                          pred && pred.direction === 'rising'
-                            ? getBuyUrgency(t.playerIn, pred)
-                            : null;
-                        return (
-                          <View key={t.playerIn.id} style={styles.targetRow}>
-                            <PlayerRow
-                              name={t.playerIn.name}
-                              status="playing"
-                              rightBadge={
-                                <View style={styles.playerRightGroup}>
-                                  {urgency && (
-                                    <InlineTag
-                                      label={`RISING ${urgency.urgency.toUpperCase()}`}
-                                      variant="positive"
-                                    />
-                                  )}
-                                  <Text style={styles.targetScore}>
-                                    {t.score.toFixed(1)}
-                                  </Text>
-                                </View>
-                              }
+                          <View style={styles.hitVerdict}>
+                            <InlineTag
+                              label={hitResult.justified ? 'HIT JUSTIFIED' : 'HIT NOT RECOMMENDED'}
+                              variant={hitResult.justified ? 'positive' : 'negative'}
                             />
                           </View>
-                        );
-                      })}
-                    </View>
-                  )}
+                        </View>
+                      )}
 
-                  {!squadData && !squad.loading && (
-                    <View style={styles.section}>
-                      <Text style={styles.emptyText}>
-                        LINK YOUR FPL TEAM ID FOR TRANSFER SUGGESTIONS
-                      </Text>
+                      {/* Transfer Suggestions Out */}
+                      {transfersOut.length > 0 && (
+                        <View style={styles.section}>
+                          <SectionHeading title="SUGGESTED TRANSFERS" />
+                          {transfersOut.slice(0, 5).map((t, i) => {
+                            if (!t.playerOut) return null;
+                            const replacement = transfersIn.find(
+                              (r) => r.playerIn.position === t.playerOut!.position,
+                            );
+                            if (!replacement) return null;
+                            const gain = projectPointsGain(
+                              t.playerOut,
+                              replacement.playerIn,
+                              4,
+                            );
+                            return (
+                              <TransferRow
+                                key={`transfer-${i}`}
+                                playerOut={t.playerOut.name}
+                                playerIn={replacement.playerIn.name}
+                                projectedGain={`${gain > 0 ? '+' : ''}${gain.toFixed(1)}`}
+                              />
+                            );
+                          })}
+                        </View>
+                      )}
+
+                      {/* Price Change Alerts */}
+                      {sellAlerts.length > 0 && (
+                        <View style={styles.section}>
+                          <SectionHeading title="PRICE ALERTS" />
+                          {sellAlerts.map((alert) => (
+                            <View key={alert.player.id} style={styles.priceAlertRow}>
+                              <View style={styles.alertDot} />
+                              <Text style={styles.priceAlertName}>
+                                {alert.player.name.toUpperCase()}
+                              </Text>
+                              <InlineTag label="FALLING" variant="negative" />
+                              <Text style={styles.priceAlertValue}>
+                                {formatCost(alert.currentSellingPrice)}M {'>> '}
+                                {formatCost(alert.predictedSellingPrice)}M
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
                     </View>
-                  )}
+
+                    <View style={isTablet ? styles.tabletColumn : undefined}>
+                      {/* Buy Urgency on Transfer In suggestions */}
+                      {transfersIn.length > 0 && (
+                        <View style={styles.section}>
+                          <SectionHeading title="TOP TARGETS" />
+                          {transfersIn.slice(0, 6).map((t) => {
+                            const pred = pricePredictions.find(
+                              (p) => p.playerId === t.playerIn.id,
+                            );
+                            const urgency =
+                              pred && pred.direction === 'rising'
+                                ? getBuyUrgency(t.playerIn, pred)
+                                : null;
+                            return (
+                              <View key={t.playerIn.id} style={styles.targetRow}>
+                                <PlayerRow
+                                  name={t.playerIn.name}
+                                  status="playing"
+                                  rightBadge={
+                                    <View style={styles.playerRightGroup}>
+                                      {urgency && (
+                                        <InlineTag
+                                          label={`RISING ${urgency.urgency.toUpperCase()}`}
+                                          variant="positive"
+                                        />
+                                      )}
+                                      <Text style={styles.targetScore}>
+                                        {t.score.toFixed(1)}
+                                      </Text>
+                                    </View>
+                                  }
+                                />
+                              </View>
+                            );
+                          })}
+                        </View>
+                      )}
+
+                      {!squadData && !squad.loading && (
+                        <View style={styles.section}>
+                          <Text style={styles.emptyText}>
+                            LINK YOUR FPL TEAM ID FOR TRANSFER SUGGESTIONS
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
                 </>
               )}
 
@@ -823,5 +831,12 @@ const styles = StyleSheet.create({
     color: colors.red,
     textTransform: 'uppercase',
     marginTop: 8,
+  },
+  tabletGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  tabletColumn: {
+    flex: 1,
   },
 });

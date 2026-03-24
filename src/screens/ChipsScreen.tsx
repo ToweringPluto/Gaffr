@@ -53,6 +53,7 @@ import {
   getStandings,
   flagDifferential,
 } from '../domain/miniLeagueAnalyser';
+import { useResponsive } from '../hooks/useResponsive';
 import type {
   SquadPlayer,
   Fixture,
@@ -96,6 +97,7 @@ export const ChipsScreen: React.FC = () => {
   const [teamId, setTeamId] = useState<number | null>(null);
   const squad = useSquad(teamId);
   const [rivals, setRivals] = useState<MiniLeagueStanding[]>([]);
+  const { isTablet } = useResponsive();
 
   useEffect(() => {
     cache.getTeamId().then((id) => setTeamId(id));
@@ -194,110 +196,117 @@ export const ChipsScreen: React.FC = () => {
             </View>
           ) : (
             <>
-              {/* ===== CHIP STATUS ===== */}
-              <View style={styles.section}>
-                <SectionHeading title="CHIP STATUS" />
-                {chipStatus.length > 0 ? (
-                  chipStatus.map((chip) => (
-                    <View key={chip.chipName} style={styles.chipRow}>
-                      <ChipCard
-                        chipName={chipDisplayName(chip.chipName)}
-                        isUsed={chip.used}
-                        targetGameweek={
-                          chip.used
-                            ? `GW${chip.usedGameweek}`
-                            : chipRoadmap?.recommendations.find(
-                                (r) => r.chipName === chip.chipName,
-                              )?.recommendedGameweek
-                              ? `GW${chipRoadmap.recommendations.find((r) => r.chipName === chip.chipName)!.recommendedGameweek}`
-                              : undefined
-                        }
-                      />
-                    </View>
-                  ))
-                ) : (
-                  <Text style={styles.emptyText}>NO CHIP DATA AVAILABLE</Text>
-                )}
-              </View>
-
-              {/* ===== CHIP ROADMAP ===== */}
-              {chipRoadmap && chipRoadmap.recommendations.length > 0 && (
-                <View style={styles.section}>
-                  <SectionHeading title="CHIP ROADMAP" />
-                  {chipRoadmap.recommendations.map((rec) => (
-                    <View key={rec.chipName} style={styles.roadmapRow}>
-                      <View style={styles.roadmapLeft}>
-                        <Text style={styles.roadmapChip}>
-                          {chipDisplayName(rec.chipName).toUpperCase()}
-                        </Text>
-                        <Text style={styles.roadmapReason}>
-                          {rec.reason.toUpperCase()}
-                        </Text>
-                      </View>
-                      <View style={styles.roadmapRight}>
-                        <Text style={styles.roadmapGw}>GW{rec.recommendedGameweek}</Text>
-                        <InlineTag
-                          label={rec.confidence}
-                          variant={
-                            rec.confidence === 'high'
-                              ? 'positive'
-                              : rec.confidence === 'medium'
-                                ? 'warning'
-                                : 'info'
-                          }
-                        />
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {/* ===== CAPTAINCY PICKS ===== */}
-              {captainCandidates.length > 0 && (
-                <View style={styles.section}>
-                  <SectionHeading title="CAPTAIN PICKS" />
-                  {captainCandidates.map((c, i) => (
-                    <CaptainCard
-                      key={c.player.id}
-                      playerName={c.player.name}
-                      fixture={`${c.fixture.opponent} ${c.fixture.isHome ? 'H' : 'A'}`}
-                      score={Math.round(c.captaincyScore * 10) / 10}
-                      isTopPick={i === 0}
-                      tags={
-                        <View style={styles.tagsRow}>
-                          {c.isDgw && <InlineTag label="DGW" variant="positive" />}
-                          {c.hasInjuryRisk && (
-                            <InlineTag label="INJURY" variant="negative" />
-                          )}
-                          {c.hasCongestionRisk && (
-                            <InlineTag label="ROTATION" variant="warning" />
-                          )}
-                          {c.fixture.isHome && (
-                            <InlineTag label="HOME" variant="positive" />
-                          )}
+              {/* Responsive grid for tablet: chips + captaincy side by side */}
+              <View style={isTablet ? styles.tabletGrid : undefined}>
+                <View style={isTablet ? styles.tabletColumn : undefined}>
+                  {/* ===== CHIP STATUS ===== */}
+                  <View style={styles.section}>
+                    <SectionHeading title="CHIP STATUS" />
+                    {chipStatus.length > 0 ? (
+                      chipStatus.map((chip) => (
+                        <View key={chip.chipName} style={styles.chipRow}>
+                          <ChipCard
+                            chipName={chipDisplayName(chip.chipName)}
+                            isUsed={chip.used}
+                            targetGameweek={
+                              chip.used
+                                ? `GW${chip.usedGameweek}`
+                                : chipRoadmap?.recommendations.find(
+                                    (r) => r.chipName === chip.chipName,
+                                  )?.recommendedGameweek
+                                  ? `GW${chipRoadmap.recommendations.find((r) => r.chipName === chip.chipName)!.recommendedGameweek}`
+                                  : undefined
+                            }
+                          />
                         </View>
-                      }
-                    />
-                  ))}
-                  {viceCaptain && (
-                    <View style={styles.vcSection}>
-                      <Text style={styles.vcLabel}>VICE CAPTAIN</Text>
-                      <CaptainCard
-                        playerName={viceCaptain.player.name}
-                        fixture={`${viceCaptain.fixture.opponent} ${viceCaptain.fixture.isHome ? 'H' : 'A'}`}
-                        score={
-                          Math.round(viceCaptain.captaincyScore * 10) / 10
-                        }
-                        tags={
-                          <View style={styles.tagsRow}>
-                            <InlineTag label="VC" variant="info" />
+                      ))
+                    ) : (
+                      <Text style={styles.emptyText}>NO CHIP DATA AVAILABLE</Text>
+                    )}
+                  </View>
+
+                  {/* ===== CHIP ROADMAP ===== */}
+                  {chipRoadmap && chipRoadmap.recommendations.length > 0 && (
+                    <View style={styles.section}>
+                      <SectionHeading title="CHIP ROADMAP" />
+                      {chipRoadmap.recommendations.map((rec) => (
+                        <View key={rec.chipName} style={styles.roadmapRow}>
+                          <View style={styles.roadmapLeft}>
+                            <Text style={styles.roadmapChip}>
+                              {chipDisplayName(rec.chipName).toUpperCase()}
+                            </Text>
+                            <Text style={styles.roadmapReason}>
+                              {rec.reason.toUpperCase()}
+                            </Text>
                           </View>
-                        }
-                      />
+                          <View style={styles.roadmapRight}>
+                            <Text style={styles.roadmapGw}>GW{rec.recommendedGameweek}</Text>
+                            <InlineTag
+                              label={rec.confidence}
+                              variant={
+                                rec.confidence === 'high'
+                                  ? 'positive'
+                                  : rec.confidence === 'medium'
+                                    ? 'warning'
+                                    : 'info'
+                              }
+                            />
+                          </View>
+                        </View>
+                      ))}
                     </View>
                   )}
                 </View>
-              )}
+
+                <View style={isTablet ? styles.tabletColumn : undefined}>
+                  {/* ===== CAPTAINCY PICKS ===== */}
+                  {captainCandidates.length > 0 && (
+                    <View style={styles.section}>
+                      <SectionHeading title="CAPTAIN PICKS" />
+                      {captainCandidates.map((c, i) => (
+                        <CaptainCard
+                          key={c.player.id}
+                          playerName={c.player.name}
+                          fixture={`${c.fixture.opponent} ${c.fixture.isHome ? 'H' : 'A'}`}
+                          score={Math.round(c.captaincyScore * 10) / 10}
+                          isTopPick={i === 0}
+                          tags={
+                            <View style={styles.tagsRow}>
+                              {c.isDgw && <InlineTag label="DGW" variant="positive" />}
+                              {c.hasInjuryRisk && (
+                                <InlineTag label="INJURY" variant="negative" />
+                              )}
+                              {c.hasCongestionRisk && (
+                                <InlineTag label="ROTATION" variant="warning" />
+                              )}
+                              {c.fixture.isHome && (
+                                <InlineTag label="HOME" variant="positive" />
+                              )}
+                            </View>
+                          }
+                        />
+                      ))}
+                      {viceCaptain && (
+                        <View style={styles.vcSection}>
+                          <Text style={styles.vcLabel}>VICE CAPTAIN</Text>
+                          <CaptainCard
+                            playerName={viceCaptain.player.name}
+                            fixture={`${viceCaptain.fixture.opponent} ${viceCaptain.fixture.isHome ? 'H' : 'A'}`}
+                            score={
+                              Math.round(viceCaptain.captaincyScore * 10) / 10
+                            }
+                            tags={
+                              <View style={styles.tagsRow}>
+                                <InlineTag label="VC" variant="info" />
+                              </View>
+                            }
+                          />
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+              </View>
 
               {/* ===== BENCH ORDER ===== */}
               {bench.length > 0 && currentGw !== null && (
@@ -624,5 +633,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 12,
     textTransform: 'uppercase',
+  },
+  tabletGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  tabletColumn: {
+    flex: 1,
   },
 });
