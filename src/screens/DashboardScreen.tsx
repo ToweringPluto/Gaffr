@@ -29,11 +29,40 @@ import {
   checkStarterInjuryRisk,
 } from '../domain/benchOrderChecker';
 import { detectOverlaps } from '../domain/teamOverlapDetector';
+import { sortNewsByPriority, getSquadPlayerIds } from '../domain/newsProcessor';
+import { useNews } from '../hooks/useNews';
 import { createLocalCache } from '../data/localCache';
-import type { SquadPlayer, BenchOrderWarning, HighPriorityAlert, TeamOverlap } from '../models';
+import { scheduleDeadlineReminder } from '../notifications/deadlineNotifier';
+import type { SquadPlayer, BenchOrderWarning, HighPriorityAlert, TeamOverlap, NewsItem, NewsSeverity } from '../models';
 
 const cache = createLocalCache();
 const TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+const SEVERITY_DOT_COLOR: Record<NewsSeverity, string> = {
+  available: colors.green,
+  doubtful_75: colors.gold,
+  doubtful_50: colors.gold,
+  doubtful_25: colors.gold,
+  injured_suspended: colors.red,
+};
+
+type TagVariant = 'positive' | 'warning' | 'negative';
+
+const SEVERITY_TAG_VARIANT: Record<NewsSeverity, TagVariant> = {
+  available: 'positive',
+  doubtful_75: 'warning',
+  doubtful_50: 'warning',
+  doubtful_25: 'warning',
+  injured_suspended: 'negative',
+};
+
+const SEVERITY_LABEL: Record<NewsSeverity, string> = {
+  available: 'AVAILABLE',
+  doubtful_75: 'DOUBTFUL 75%',
+  doubtful_50: 'DOUBTFUL 50%',
+  doubtful_25: 'DOUBTFUL 25%',
+  injured_suspended: 'INJURED',
+};
 
 type PlayerStatus = 'playing' | 'blank' | 'doubt' | 'dgw';
 
@@ -73,6 +102,7 @@ export const DashboardScreen: React.FC = () => {
   const [teamIdChecked, setTeamIdChecked] = useState(false);
   const [showTeamIdScreen, setShowTeamIdScreen] = useState(false);
   const squad = useSquad(teamId);
+  const news = useNews();
   const [deadlineState, setDeadlineState] = useState<DeadlineState | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -98,6 +128,16 @@ export const DashboardScreen: React.FC = () => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
+  }, [bootstrap.data]);
+
+  // Schedule deadline push notification when bootstrap data is available
+  useEffect(() => {
+    if (bootstrap.data?.gameweeks) {
+      const state = getDeadlineState(bootstrap.data.gameweeks, new Date(), TIMEZONE);
+      if (state && !state.isLocked && state.deadlineUtc) {
+        scheduleDeadlineReminder(state.deadlineUtc);
+      }
+    }
   }, [bootstrap.data]);
 
   const isLoading = bootstrap.loading || fixturesHook.loading || squad.loading;
@@ -143,6 +183,13 @@ export const DashboardScreen: React.FC = () => {
 
   // Chips remaining count
   const chipsRemaining = chipStatus.filter((c) => !c.used).length;
+
+  // Sorted news items — squad injury news first
+  const sortedNews: NewsItem[] = (() => {
+    if (!news.data || news.data.length === 0) return [];
+    const squadIds = squadData ? getSquadPlayerIds(squadData.players) : new Set<number>();
+    return sortNewsByPriority(news.data, squadIds);
+  })();
 
   // Show team ID entry screen if no team linked yet
   if (showTeamIdScreen && !teamId) {
@@ -327,6 +374,48 @@ export const DashboardScreen: React.FC = () => {
                 </View>
               )}
 
+              {/* News Feed */}
+              {(sortedNews.length > 0 || news.error) && (
+                <View style={styles.section}>
+                  <SectionHeading title="NEWS" />
+                  {news.error && (
+                    <Text style={styles.newsUnavailableText}>
+                      EXTERNAL NEWS UNAVAILABLE
+                    </Text>
+                  )}
+                  {sortedNews.map((item, i) => (
+                    <View key={`news-${i}`} style={styles.newsItem}>
+                      <View style={styles.newsRow}>
+                        <View
+                          style={[
+                            styles.newsDot,
+                            { backgroundColor: SEVERITY_DOT_COLOR[item.severity] },
+                          ]}
+                        />
+                        <Text style={styles.newsPlayerName}>
+                          {item.playerName.toUpperCase()}
+                        </Text>
+                        <InlineTag
+                          label={SEVERITY_LABEL[item.severity]}
+                          variant={SEVERITY_TAG_VARIANT[item.severity]}
+                        />
+                      </View>
+                      {item.speakerName && (
+                        <Text style={styles.newsSpeaker}>
+                          {item.speakerName.toUpperCase()}:
+                        </Text>
+                      )}
+                      <Text style={styles.newsContent}>
+                        {item.content.toUpperCase()}
+                      </Text>
+                      <Text style={styles.newsTimestamp}>
+                        {item.timestamp}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
               {/* No squad linked message */}
               {!squadData && !squad.loading && (
                 <View style={styles.section}>
@@ -459,6 +548,63 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 20,
     textTransform: 'uppercase',
+  },
+  newsUnavailableText: {
+    fontFamily,
+    fontSize: fontSizes.bodySecondary,
+    fontWeight: fontWeights.normal,
+    color: colors.red,
+    textTransform: 'uppercase',
+    paddingVertical: 4,
+  },
+  newsItem: {
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.bgSurface,
+  },
+  newsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  newsDot: {
+    width: 8,
+    height: 8,
+  },
+  newsPlayerName: {
+    fontFamily,
+    fontSize: fontSizes.bodyPrimary,
+    fontWeight: fontWeights.bold,
+    color: '#c8d8e8',
+    textTransform: 'uppercase',
+    flex: 1,
+  },
+  newsSpeaker: {
+    fontFamily,
+    fontSize: fontSizes.bodySecondary,
+    fontWeight: fontWeights.bold,
+    color: colors.gold,
+    textTransform: 'uppercase',
+    paddingLeft: 14,
+    marginTop: 2,
+  },
+  newsContent: {
+    fontFamily,
+    fontSize: fontSizes.bodySecondary,
+    fontWeight: fontWeights.normal,
+    color: '#c8d8e8',
+    textTransform: 'uppercase',
+    paddingLeft: 14,
+    marginTop: 2,
+  },
+  newsTimestamp: {
+    fontFamily,
+    fontSize: fontSizes.bodySecondary,
+    fontWeight: fontWeights.normal,
+    color: colors.blueLight,
+    textTransform: 'uppercase',
+    paddingLeft: 14,
+    marginTop: 2,
   },
   errorText: {
     fontFamily,
