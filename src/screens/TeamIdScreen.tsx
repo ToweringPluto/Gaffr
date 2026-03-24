@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { colors, fontFamily, fontWeights, fontSizes, contentPadding } from '../theme';
 import { ScreenHeader, LoadingText } from '../components';
-import { createFplApiClient } from '../data/fplApiClient';
+import { createFplApiClient, FplApiError } from '../data/fplApiClient';
 import { createLocalCache } from '../data/localCache';
 
 const apiClient = createFplApiClient();
@@ -41,8 +41,18 @@ export const TeamIdScreen: React.FC<TeamIdScreenProps> = ({ onLinked, onSkip }) 
       await apiClient.getManagerSquad(id);
       await cache.setTeamId(id);
       onLinked(id);
-    } catch {
-      setError('TEAM ID NOT RECOGNISED. CHECK AND TRY AGAIN.');
+    } catch (err) {
+      if (err instanceof FplApiError) {
+        if (err.statusCode === 404) {
+          setError('TEAM ID NOT RECOGNISED. CHECK AND TRY AGAIN.');
+        } else if (err.statusCode === undefined) {
+          setError('COULD NOT REACH FPL. CHECK YOUR CONNECTION.');
+        } else {
+          setError('FPL API ERROR. TRY AGAIN LATER.');
+        }
+      } else {
+        setError('FPL API ERROR. TRY AGAIN LATER.');
+      }
     } finally {
       setLoading(false);
     }
