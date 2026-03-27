@@ -436,7 +436,7 @@ export const DashboardScreen: React.FC = () => {
               )}
 
               {/* No squad linked message */}
-              {!squadData && !squad.loading && (
+              {!teamId && !squadData && !squad.loading && (
                 <View style={styles.section}>
                   <Text style={styles.noSquadText}>
                     ENTER YOUR FPL TEAM ID TO SEE YOUR SQUAD
