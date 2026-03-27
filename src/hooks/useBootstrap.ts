@@ -2,9 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import type { BootstrapStatic } from '../models/bootstrapStatic';
 import { createFplApiClient } from '../data/fplApiClient';
 import { createLocalCache } from '../data/localCache';
+import { createDataParser } from '../data/dataParser';
 
 const apiClient = createFplApiClient();
 const cache = createLocalCache();
+const parser = createDataParser();
 
 export interface UseBootstrapResult {
   data: BootstrapStatic | null;
@@ -22,7 +24,8 @@ export function useBootstrap(): UseBootstrapResult {
     setLoading(true);
     setError(null);
     try {
-      const result = await apiClient.getBootstrapStatic();
+      const raw = await apiClient.getBootstrapStatic();
+      const result = parser.parseBootstrap(raw);
       setData(result);
       await cache.setBootstrap(result);
       await cache.setLastRefreshTime(new Date());

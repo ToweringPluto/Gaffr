@@ -2,9 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Fixture } from '../models/fixture';
 import { createFplApiClient } from '../data/fplApiClient';
 import { createLocalCache } from '../data/localCache';
+import { createDataParser } from '../data/dataParser';
 
 const apiClient = createFplApiClient();
 const cache = createLocalCache();
+const parser = createDataParser();
 
 export interface UseFixturesResult {
   data: Fixture[] | null;
@@ -22,7 +24,8 @@ export function useFixtures(): UseFixturesResult {
     setLoading(true);
     setError(null);
     try {
-      const result = await apiClient.getFixtures();
+      const raw = await apiClient.getFixtures();
+      const result = parser.parseFixtures(raw);
       setData(result);
       await cache.setFixtures(result);
       await cache.setLastRefreshTime(new Date());
