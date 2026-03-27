@@ -1,9 +1,10 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { FixturesScreen } from '../screens/FixturesScreen';
 import { SquadScreen } from '../screens/SquadScreen';
@@ -88,13 +89,15 @@ function SwipeableChips() {
 }
 
 const CustomTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.tabBar}>
+    <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
       {state.routes.map((route, index) => {
         const isFocused = state.index === index;
         const label = TAB_LABELS[route.name] ?? route.name;
         const pipColor = isFocused ? colors.gold : colors.blueMid;
-        const labelColor = isFocused ? colors.gold : colors.blueMid;
+        const labelColor = isFocused ? colors.gold : colors.blueLight;
 
         const onPress = () => {
           const event = navigation.emit({
@@ -155,7 +158,6 @@ const styles = StyleSheet.create({
     borderTopWidth: borders.navTop.borderTopWidth,
     borderTopColor: borders.navTop.borderTopColor,
     paddingTop: 6,
-    paddingBottom: 10,
   },
   tabItem: {
     flexDirection: 'column',

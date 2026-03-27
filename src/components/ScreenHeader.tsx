@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { fontFamily, fontSizes, fontWeights } from '../theme/typography';
 
@@ -14,8 +15,10 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   showLogo,
   gameweek,
 }) => {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 8) }]}>
       <View style={styles.left}>
         {showLogo ? (
           <Text style={styles.logo}>gaffr</Text>
@@ -38,8 +41,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 3,
     borderBottomColor: colors.gold,
     paddingHorizontal: 10,
-    paddingVertical: 8,
-    height: 34,
+    paddingBottom: 8,
+    minHeight: 34,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
