@@ -29,7 +29,7 @@ const TAB_LABELS: Record<string, string> = {
   Chips: 'CHIPS',
 };
 
-const PIP_SIZE = 4;
+const PIP_SIZE = 5;
 const SWIPE_THRESHOLD = 50;
 
 function SwipeableScreen({ children }: { children: React.ReactNode }) {
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily,
     fontSize: fontSizes.navLabel,
-    fontWeight: fontWeights.normal,
+    fontWeight: fontWeights.bold,
     textTransform: 'uppercase',
   },
 });

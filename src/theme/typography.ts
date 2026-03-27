@@ -16,7 +16,7 @@ export const fontSizes = {
   statValueSmall: 16,
   statLabel: 7,
   badge: 7,
-  navLabel: 7,
+  navLabel: 9,
 } as const;
 
 export const fontWeights = {
@@ -78,14 +78,14 @@ export const typeStyles = {
   navLabelInactive: {
     fontFamily,
     fontSize: fontSizes.navLabel,
-    fontWeight: fontWeights.normal,
-    color: '#2a4a6b',
+    fontWeight: fontWeights.bold,
+    color: '#7ec8e3',
     textTransform: 'uppercase' as const,
   },
   navLabelActive: {
     fontFamily,
     fontSize: fontSizes.navLabel,
-    fontWeight: fontWeights.normal,
+    fontWeight: fontWeights.bold,
     color: '#e8c832',
     textTransform: 'uppercase' as const,
   },
