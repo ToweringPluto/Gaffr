@@ -72,7 +72,11 @@ export const SquadScreen: React.FC = () => {
   const bootstrap = useBootstrap();
   const fixturesHook = useFixtures();
   const [teamId, setTeamId] = useState<number | null>(null);
-  const squad = useSquad(teamId);
+  const squad = useSquad(
+    teamId,
+    bootstrap.data?.players,
+    bootstrap.data?.currentGameweek,
+  );
 
   const [viewMode, setViewMode] = useState<ViewMode>('players');
   const [positionFilter, setPositionFilter] = useState<Position | null>(null);

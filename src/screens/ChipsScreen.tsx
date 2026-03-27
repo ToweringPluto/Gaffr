@@ -95,7 +95,11 @@ export const ChipsScreen: React.FC = () => {
   const fixturesHook = useFixtures();
   const newsHook = useNews();
   const [teamId, setTeamId] = useState<number | null>(null);
-  const squad = useSquad(teamId);
+  const squad = useSquad(
+    teamId,
+    bootstrap.data?.players,
+    bootstrap.data?.currentGameweek,
+  );
   const [rivals, setRivals] = useState<MiniLeagueStanding[]>([]);
   const { isTablet } = useResponsive();
 

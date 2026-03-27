@@ -112,7 +112,11 @@ export const DashboardScreen: React.FC = () => {
   const [teamId, setTeamId] = useState<number | null>(null);
   const [teamIdChecked, setTeamIdChecked] = useState(false);
   const [showTeamIdScreen, setShowTeamIdScreen] = useState(false);
-  const squad = useSquad(teamId);
+  const squad = useSquad(
+    teamId,
+    bootstrap.data?.players,
+    bootstrap.data?.currentGameweek,
+  );
   const news = useNews();
   const [deadlineState, setDeadlineState] = useState<DeadlineState | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);

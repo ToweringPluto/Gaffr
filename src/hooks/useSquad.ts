@@ -3,11 +3,8 @@ import type { ManagerSquad, SquadPlayer, ChipStatus } from '../models/squad';
 import type { Player } from '../models/player';
 import { createFplApiClient } from '../data/fplApiClient';
 import { createLocalCache } from '../data/localCache';
-import { createDataParser } from '../data/dataParser';
-
 const apiClient = createFplApiClient();
 const cache = createLocalCache();
-const parser = createDataParser();
 
 export interface UseSquadResult {
   data: ManagerSquad | null;
@@ -29,15 +26,13 @@ async function fetchCompositeSquad(
   currentGameweek: number,
 ): Promise<ManagerSquad> {
   // Fetch all needed data in parallel
-  const [entryRaw, picksRaw, historyRaw] = await Promise.all([
-    apiClient.getManagerSquad(teamId),             // /entry/{id}/
-    apiClient.getManagerPicks(teamId, currentGameweek), // /entry/{id}/event/{gw}/picks/
-    apiClient.getManagerHistory(teamId),            // /entry/{id}/history/
+  // Fetch raw JSON from all endpoints in parallel — cast through unknown
+  // because the API client types don't match the raw response shape
+  const [entry, picks, history] = await Promise.all([
+    apiClient.getManagerSquad(teamId) as unknown as Record<string, unknown>,
+    apiClient.getManagerPicks(teamId, currentGameweek) as unknown as Record<string, unknown>,
+    apiClient.getManagerHistory(teamId) as unknown as Record<string, unknown>,
   ]);
-
-  const entry = entryRaw as Record<string, unknown>;
-  const picks = picksRaw as Record<string, unknown>;
-  const history = historyRaw as Record<string, unknown>;
 
   // Build a player lookup from bootstrap data
   const playerMap = new Map<number, Player>();
@@ -75,15 +70,8 @@ async function fetchCompositeSquad(
 
   // Parse budget from entry data
   const budget = Number(entry.last_deadline_bank ?? entry.bank ?? 0);
-  const totalValue = Number(entry.last_deadline_value ?? entry.value ?? 0);
 
   // Parse transfers info
-  const currentGwHistory = Array.isArray(history.current)
-    ? history.current : [];
-  const lastGw = currentGwHistory.length > 0
-    ? currentGwHistory[currentGwHistory.length - 1] as Record<string, unknown>
-    : {} as Record<string, unknown>;
-
   // Free transfers: not directly available from API, default to 1
   // (the API doesn't expose this directly; we approximate)
   const freeTransfers = 1;
